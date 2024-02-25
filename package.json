@@ -1,17 +1,23 @@
 {
-  "name": "graphql-data-dictionary",
+  "name": "@apollosolutions/graphql-data-dictionary",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "bin/index.js",
+  "bin": "bin/index.js",
+  "author": "lucas@apollographql.com",
+  "license": "MIT",
+  "repository": "https://github.com/apollosolutions/graphql-data-dictionary",
+  "engines": {
+    "node": ">=16"
+  },
   "scripts": {
     "deploy": "tsc",
+    "format": "prettier --ignore-path .gitignore --write \"**/*.+(js|ts|json)\"",
     "dev": "nodemon src/index.ts generate --schema=examples/schema.graphql",
     "start": "node bin/index.js",
     "example": "node bin/index.js generate --schema=examples/schema.graphql --output=examples/example_output.csv"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "clipanion": "^4.0.0-rc.3",
     "csv-writer": "^1.6.0",
