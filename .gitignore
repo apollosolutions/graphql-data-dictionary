@@ -25,3 +25,6 @@ yarn-error.log*
 ehthumbs.db
 *[Tt]humbs.db
 *.Trashes
+
+# project-specific
+/*.csv

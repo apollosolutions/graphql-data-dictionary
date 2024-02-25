@@ -1,0 +1,30 @@
+{
+  "name": "graphql-data-dictionary",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "tsc",
+    "dev": "nodemon src/index.ts generate --schema=examples/schema.graphql",
+    "start": "node bin/index.js",
+    "example": "node bin/index.js generate --schema=examples/schema.graphql --output=examples/example_output.csv"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "clipanion": "^4.0.0-rc.3",
+    "csv-writer": "^1.6.0",
+    "graphql": "^16.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.20",
+    "@typescript-eslint/eslint-plugin": "^7.0.2",
+    "@typescript-eslint/parser": "^7.0.2",
+    "eslint": "^8.57.0",
+    "nodemon": "^3.1.0",
+    "prettier": "^3.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
