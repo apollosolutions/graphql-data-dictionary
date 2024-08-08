@@ -1,10 +1,15 @@
 schema
   @link(url: "https://specs.apollo.dev/link/v1.0")
   @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
-  @link(url: "https://specs.apollo.dev/tag/v0.3") {
+  @link(url: "https://specs.apollo.dev/tag/v0.3")
+  @link(url: "https://specs.acme.co/example/v1.0", import: ["@example"]) {
   query: Query
   mutation: Mutation
 }
+
+directive @example(
+  samples: [String!]!
+) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
 directive @join__enumValue(graph: join__Graph!) repeatable on ENUM_VALUE
 
@@ -98,46 +103,16 @@ type Inventory @join__type(graph: INVENTORY) {
 scalar join__FieldSet
 
 enum join__Graph {
-  CHECKOUT
-    @join__graph(
-      name: "checkout"
-      url: "https://apollosolutions--retail-supergraph.fly.dev/checkout/graphql"
-    )
+  CHECKOUT @join__graph(name: "checkout", url: "http://checkout-service:8080")
   DISCOVERY
-    @join__graph(
-      name: "discovery"
-      url: "https://apollosolutions--retail-supergraph.fly.dev/discovery/graphql"
-    )
+    @join__graph(name: "discovery", url: "http://discovery-service:8080")
   INVENTORY
-    @join__graph(
-      name: "inventory"
-      url: "https://apollosolutions--retail-supergraph.fly.dev/inventory/graphql"
-    )
-  ORDERS
-    @join__graph(
-      name: "orders"
-      url: "https://apollosolutions--retail-supergraph.fly.dev/orders/graphql"
-    )
-  PRODUCTS
-    @join__graph(
-      name: "products"
-      url: "https://apollosolutions--retail-supergraph.fly.dev/products/graphql"
-    )
-  REVIEWS
-    @join__graph(
-      name: "reviews"
-      url: "https://apollosolutions--retail-supergraph.fly.dev/reviews/graphql"
-    )
-  SHIPPING
-    @join__graph(
-      name: "shipping"
-      url: "https://apollosolutions--retail-supergraph.fly.dev/shipping/graphql"
-    )
-  USERS
-    @join__graph(
-      name: "users"
-      url: "https://apollosolutions--retail-supergraph.fly.dev/users/graphql"
-    )
+    @join__graph(name: "inventory", url: "http://inventory-service:8080")
+  ORDERS @join__graph(name: "orders", url: "http://orders-service:8080")
+  PRODUCTS @join__graph(name: "products", url: "http://products-service:8080")
+  REVIEWS @join__graph(name: "reviews", url: "http://reviews-service:8080")
+  SHIPPING @join__graph(name: "shipping", url: "http://shipping-service:8080")
+  USERS @join__graph(name: "users", url: "http://users-service:8080")
 }
 
 scalar link__Import
@@ -228,15 +203,21 @@ type Product
     @join__field(graph: DISCOVERY)
     @join__field(graph: PRODUCTS)
     @tag(name: "internal")
+  upc: ID!
+    @join__field(graph: DISCOVERY, external: true)
+    @join__field(graph: PRODUCTS)
+    @join__field(graph: REVIEWS)
 
   """
   Related products for this product, the user can be fetched from the `x-user-id` header
   """
-  recommendedProducts: [Product] @join__field(graph: DISCOVERY)
-  upc: ID! @join__field(graph: PRODUCTS) @join__field(graph: REVIEWS)
+  recommendedProducts: [Product!]
+    @join__field(graph: DISCOVERY, requires: "upc")
   title: String @join__field(graph: PRODUCTS)
   description: String @join__field(graph: PRODUCTS)
-  mediaUrl: String @join__field(graph: PRODUCTS)
+  mediaUrl: String!
+    @join__field(graph: PRODUCTS)
+    @example(samples: ["https://via.placeholder.com/150"])
 
   """
   Mock random date of when a product might be released
@@ -255,7 +236,7 @@ type Product
 Search filters for when returning Products
 """
 input ProductSearchInput @join__type(graph: PRODUCTS) {
-  titleStartsWith: String
+  titleStartsWith: String @example(samples: ["Rocketship"])
 }
 
 type Query
@@ -353,7 +334,7 @@ type User
   """
   Suggest products for this user, optionally pass in a specific product id to compare too
   """
-  recommendedProducts(productId: ID = null): [Product]
+  recommendedProducts(productId: ID = null): [Product]!
     @join__field(graph: DISCOVERY)
 
   """

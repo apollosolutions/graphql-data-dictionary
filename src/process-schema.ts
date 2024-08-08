@@ -38,6 +38,28 @@ type Parent = {
   name: string
   subgraphs: string[]
 }
+
+const BUILT_IN_DIRECTIVES = [
+  'join__type',
+  'join__unionMember',
+  'join__enumValue',
+  'join__field',
+  'join__inputField',
+  'join__implements',
+  'join__graph',
+  'link',
+]
+
+const BUILT_IN_SCALARS = [
+  'join__FieldSet',
+  'link__Import',
+]
+
+const BUILT_IN_ENUMS = [
+  'join__Graph',
+  'link__Purpose'
+]
+
 const results: Results = []
 
 const interfaceMap = new Map<string, string[]>()
@@ -54,6 +76,7 @@ const determineDefaultOrValue = (
     case Kind.INT:
     case Kind.FLOAT:
     case Kind.STRING:
+    case Kind.ENUM:
       return dv.value
     case Kind.BOOLEAN:
       return dv.value.toString()
@@ -119,11 +142,11 @@ const pullSubgraphs = (
   node.directives.forEach((d) => {
     switch (d.name.value) {
       case 'join__type':
-      case 'join_unionMember':
+      case 'join__unionMember':
       case 'join__field':
       case 'join__enumValue':
       case 'join__inputField':
-      case 'join__implement':
+      case 'join__implements':
         d.arguments?.forEach((a) => {
           if (a.name.value === 'graph') {
             subgraphs.push(determineDefaultOrValue(a.value))
@@ -160,8 +183,18 @@ const processArgs = (
       result.subgraphs = [
         ...pullSubgraphs(arg),
         ...pullSubgraphs(field),
-        ...parent.subgraphs
       ]
+
+      // avoid setting the query/mutation/subgraph type parents since all subgraphs will have it if defined
+      // and isn't representative of the actual subgraphs defining that field 
+      if (parent.name != 'Query' && parent.name != 'Mutation' && parent.name != 'Subscription') {
+        result.subgraphs.push(...parent.subgraphs)
+      }
+
+      // remove duplicate subgraphs
+      result.subgraphs = result.subgraphs.filter((elem, pos) => {
+        return result.subgraphs?.indexOf(elem) == pos
+      })
     }
     results.push(result)
   })
@@ -179,7 +212,8 @@ const processField = (
   if (fieldSubgraphs.length === 0) {
     fieldSubgraphs = parent.subgraphs
   }
-
+  // remove any newlines from the description to avoid the csv from becoming invalid
+  const description = field.description?.value.replace(/\r?\n|\r/g, " ");
   const result: Result = {
     object: `${parentNode.name.value}.${field.name.value}`,
     returnType: determineType({
@@ -187,7 +221,7 @@ const processField = (
       nodes: [field],
       typeName: ''
     }),
-    description: field.description?.value,
+    description: description,
     subgraphs: fieldSubgraphs.filter((elem, pos) => {
       return fieldSubgraphs.indexOf(elem) == pos
     })
@@ -244,6 +278,8 @@ const processField = (
 }
 
 const processType = (node: TypeDefinitionNode, kind: string) => {
+  if (BUILT_IN_ENUMS.includes(node.name.value) || BUILT_IN_SCALARS.includes(node.name.value)) return
+
   const subgraphs = pullSubgraphs(node)
 
   parent = {
@@ -251,13 +287,17 @@ const processType = (node: TypeDefinitionNode, kind: string) => {
     subgraphs: subgraphs
   }
 
+  // avoid adding newlines to the csv
+  const description = node.description?.value.replace(/\r?\n|\r/g, " ");
+
   const result: Result = {
     object: node.name.value,
     returnType: kind,
     args: '',
-    description: node.description?.value,
+    description: description,
     subgraphs: subgraphs
   }
+
   if (
     node.kind !== Kind.SCALAR_TYPE_DEFINITION &&
     node.kind !== Kind.UNION_TYPE_DEFINITION &&
@@ -288,11 +328,13 @@ const processType = (node: TypeDefinitionNode, kind: string) => {
 }
 
 const processDirective = (node: DirectiveDefinitionNode) => {
+  if (BUILT_IN_DIRECTIVES.includes(node.name.value)) return
+  const description = node.description?.value.replace(/\r?\n|\r/g, " ");
   const result: Result = {
     object: node.name.value,
     returnType: 'Directive',
     args: '',
-    description: node.description?.value
+    description: description,
   }
 
   result.args = node.arguments
