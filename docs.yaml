@@ -1,0 +1,7 @@
+name: graphql-data-dictionary
+description: A CLI that converts GraphQL SDL into a CSV that is other data
+  management systems can consume. The CSV will add information about subgraphs
+  if provided a supergraph schema file.
+tags:
+  - Schema
+  - Governance
